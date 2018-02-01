@@ -17,29 +17,42 @@ public class MazeGen : MonoBehaviour {
     [Range(0f,1f)]
     public float roomChance;
 
+    [Range(0f, 1f)]
+    public float roomAdditionChance;
+
+    public int tilesizeX=1;
+    public int tilesizeY = 1;
+
     private int[,] maze;
 
     // Use start in real game its update for testing
     void Start () {
-        generateMaze();
+        generateMazeBase();
+        mapValidator();
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
             {
                 if (maze[x, y] == 0)
                 {
-                    map.SetTile(new Vector3Int(-x + width / 2, -y + height / 2, 0), dungeonFloor);
+                    //map.SetTile(new Vector3Int(-x + width / 2, -y + height / 2, 0), dungeonFloor);
                 }
                 else
                 {
-                    map.SetTile(new Vector3Int(-x + width / 2, -y + height / 2, 0), dungeonWall);
+                    for(int innerx = 0; innerx < tilesizeX; innerx++)
+                    {
+                        for (int innery = 0; innery < tilesizeY; innery++)
+                        {
+                            map.SetTile(new Vector3Int(-x*tilesizeX+innerx + width*tilesizeX / 2, -y*tilesizeY+innery + height*tilesizeY / 2, 0), dungeonWall);
+                        }
+                    }
                 }
-                
             }
         }
+
     }
 
-    public int[,] generateMaze()
+    public int[,] generateMazeBase()
     {
         maze = new int[height, width];
         // Initialize
@@ -181,8 +194,68 @@ public class MazeGen : MonoBehaviour {
                     maze[x + i, y + j] = 0;
                 }
             }
-        }
-        
 
+            for (int i = -corridorLength / 2 + 1; i < corridorLength / 2; i++)
+            {
+                for (int j = -corridorLength / 2 + 1; j < corridorLength / 2; j++)
+                {
+                    int neighbours = 0;
+                    for(int n = -1; n < 2; n++)
+                    {
+                       if(maze[x + i+n, y + j] == 1)
+                       {
+                            neighbours++;
+                       }
+                    }
+                    for (int n = -1; n < 2; n++)
+                    {
+                        if (maze[x + i, y + j +n] == 1)
+                        {
+                            neighbours++;
+                        }
+                    }
+
+                    if (neighbours*roomAdditionChance>Random.Range(0f,1f) && neighbours!=0)
+                    {
+                        maze[x + i, y + j] = 1;
+                    }
+
+                    if (j==0 || i==0)
+                    {
+                        maze[x + i, y + j] = 0;
+                    }
+                }
+            }
+        }
+    }
+
+    public void mapValidator()
+    {
+        for (int x = 1; x < width-1; x++)
+        {
+            for (int y = 1; y < height-1; y++)
+            {
+                int differentNeighbours = 0;
+                for (int n = -1; n < 2; n++)
+                {
+                    if (maze[x + n, y ] != maze[x , y])
+                    {
+                        differentNeighbours++;
+                    }
+                }
+                for (int n = -1; n < 2; n++)
+                {
+                    if (maze[x , y + n] != maze[x, y])
+                    {
+                        differentNeighbours++;
+                    }
+                }
+
+                if (differentNeighbours==4)
+                {
+                    maze[x, y] = (maze[x, y] + 1) % 2;
+                }
+            }
+        }
     }
 }
